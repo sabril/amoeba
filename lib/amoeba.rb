@@ -48,6 +48,11 @@ module Amoeba
         @excludes ||= []
         @excludes
       end
+      
+      def files
+        @files ||= []
+        @files
+      end
 
       def clones
         @clones ||= []
@@ -62,11 +67,6 @@ module Amoeba
       def overrides
         @overrides ||= []
         @overrides
-      end
-
-      def files
-        @files ||= []
-        @files
       end
 
       def null_fields
@@ -136,6 +136,17 @@ module Amoeba
         end
         @excludes
       end
+      
+      def files(value=nil)
+        @enabled ||= true
+        @files ||= []
+        if value.is_a?(Array)
+          @files = value
+        else
+          @files << value if value
+        end
+        @files
+      end
 
       def clone(value=nil)
         @enabled ||= true
@@ -168,17 +179,6 @@ module Amoeba
           @customizations << value if value
         end
         @customizations
-      end
-
-      def files(value=nil)
-        @enabled ||= true
-        @files ||= []
-        if value.is_a?(Array)
-          @files = value
-        else
-          @files << value if value
-        end
-        @files
       end
 
       def recognize(value=nil)
@@ -340,7 +340,7 @@ module Amoeba
     # }}}
 
     def amoeba_dup(options={})
-      @result = super()
+      @result = self.dup()
 
       # Inherit Parent Settings {{{
       if !amoeba_conf.enabled && parent_amoeba_conf.inherit
@@ -438,11 +438,9 @@ module Amoeba
         old_obj = self.send(relation_name)
 
         if not old_obj.nil?
-          copy_of_obj = old_obj.dup
+          copy_of_obj = old_obj.amoeba_dup
           copy_of_obj[:"#{settings.foreign_key}"] = nil
-
-          # this is a possible solution for copying carrierwave files
-          # as proposed on github issue #9
+          
           files = amoeba_conf.files
           if files.length > 0 && files.include?(relation_name)
             copy_of_obj.send(:"#{relation_name}=", old_obj.file)
@@ -462,15 +460,13 @@ module Amoeba
           # rather than only maintaining the associations
           self.send(relation_name).each do |old_obj|
 
-            copy_of_obj = old_obj.dup
+            copy_of_obj = old_obj.amoeba_dup
 
-            # this is a possible solution for copying carrierwave files
-            # as proposed on github issue #9
             files = amoeba_conf.files
             if files.length > 0 && files.include?(relation_name)
               copy_of_obj.send(:"#{relation_name}=", old_obj.file)
             end
-
+            
             # associate this new child to the new parent object
             @result.send(relation_name) << copy_of_obj
           end
@@ -484,16 +480,15 @@ module Amoeba
           return if settings.is_a?(ActiveRecord::Reflection::ThroughReflection)
 
           self.send(relation_name).each do |old_obj|
-            copy_of_obj = old_obj.dup
-
-            # this is a possible solution for copying carrierwave files
-            # as proposed on github issue #9
+            copy_of_obj = old_obj.amoeba_dup
             files = amoeba_conf.files
             if files.length > 0 && files.include?(relation_name)
               copy_of_obj.send(:"#{relation_name}=", old_obj.file)
             end
-
+            
             copy_of_obj[:"#{settings.foreign_key}"] = nil
+            
+
 
             # associate this new child to the new parent object
             @result.send(relation_name) << copy_of_obj
@@ -505,28 +500,21 @@ module Amoeba
 
         if clone
           self.send(relation_name).each do |old_obj|
-            copy_of_obj = old_obj.dup
-
-            # this is a possible solution for copying carrierwave files
-            # as proposed on github issue #9
+            copy_of_obj = old_obj.amoeba_dup
             files = amoeba_conf.files
             if files.length > 0 && files.include?(relation_name)
               copy_of_obj.send(:"#{relation_name}=", old_obj.file)
             end
-
             # associate this new child to the new parent object
             @result.send(relation_name) << copy_of_obj
           end
         else
           self.send(relation_name).each do |old_obj|
-            # this is a possible solution for copying carrierwave files
-            # as proposed on github issue #9
+            # associate this new child to the new parent object
             files = amoeba_conf.files
             if files.length > 0 && files.include?(relation_name)
               copy_of_obj.send(:"#{relation_name}=", old_obj.file)
             end
-
-            # associate this new child to the new parent object
             @result.send(relation_name) << old_obj
           end
         end
