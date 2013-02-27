@@ -339,7 +339,7 @@ module Amoeba
     end
     # }}}
 
-    def dup(options={})
+    def amoeba_dup(options={})
       @result = super()
 
       # Inherit Parent Settings {{{
